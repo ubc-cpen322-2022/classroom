@@ -52,7 +52,7 @@ You will need to **share your Github username on Canvas** to receive an invitati
 
 This walk-through assumes you're working in a Unix environment - i.e. using `ls` for listing directories instead of `dir` as in MS-DOS.
 
-1. After the deadline for the "Assignment Repository Setup" (Sep 26, 2021), you should receive an invitation to your repository. Accept the Github invitation sent to **your primary email address** associated with your Github account.
+1. After the deadline for the "Assignment Repository Setup" (Sep 18, 2022), you should receive an invitation to your repository. Accept the Github invitation sent to **your primary email address** associated with your Github account.
 2. Once you have access to the repository, clone the repository on your local machine by using the `git clone` command as shown in the example below:
 
 ```
@@ -61,7 +61,7 @@ This walk-through assumes you're working in a Unix environment - i.e. using `ls`
 #     your working directory is at "~/cpen322"
 # Replace the above two tokens with your own settings.
 
-~/cpen322$ git clone https://github.com/ubc-cpen322-2021/project-my-username.git
+~/cpen322$ git clone https://github.com/ubc-cpen322-2022/project-my-username.git
 ```
 
 3. The repository is now copied to your machine at `~/cpen322/project-my-username`. Navigate into the directory to see the content.
