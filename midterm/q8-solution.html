@@ -1,0 +1,381 @@
+<!-- Enter your HTML code here -->
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>DOM Traversal</title>
+<style>
+#top-menu {
+	padding: 0.5rem;
+	border-bottom: 1px solid #aaa;
+	font-family: Helvetica, sans-serif;
+}
+#top-menu > button {
+	padding: 0.5rem;
+	margin-right: 1rem;
+	color: white;
+	font-weight: 600;
+	font-family: Helvetica, sans-serif;
+	font-size: 1rem;
+	background: rgb(110,110,220);
+	border: 1px solid rgb(40,40,200);
+	box-shadow: 0 0 0.5rem rgba(0,0,0,0.3);
+}
+
+#testarea {
+	display: flex;
+	flex-wrap: wrap;
+}
+
+.test-box {
+	margin: 0.5rem;
+	padding: 0.5rem;
+	border: 1px solid #ccc;
+	box-shadow: 0 0 10px #aaaa;
+	width: 30%;
+}
+.test-control h4 {
+	font-family: Helvetica, sans-serif;
+	display: inline-block;
+	margin-right: 1rem;
+}
+.test-control button {
+	padding: 0.4rem;
+	color: white;
+	font-weight: 600;
+	font-family: Helvetica, sans-serif;
+	font-size: 0.9rem;
+	background: rgb(110,110,220);
+	border: 1px solid rgb(40,40,200);
+	box-shadow: 0 0 0.5rem rgba(0,0,0,0.3);
+}
+.test-control span {
+	font-family: Helvetica, sans-serif;
+}
+.test-container div, 
+.test-container span, 
+.test-container p {
+	padding: 0.5rem;
+	border: 1px dashed #ccc;
+	background: white;
+}
+.test-container span {
+	display: inline-block;
+}
+
+.test-container .changed,
+.test-container.changed {
+	background: rgb(40,180,40);
+}
+
+.test-container .skip,
+.test-container.skip {
+	background: rgb(180,180,180);
+}
+
+.test-control .test-label {
+	font-family: Consolas, monospace;
+	font-size: 0.8em;
+}
+
+#console {
+	padding: 1em;
+	border: 1px solid #ddd;
+	max-height: 8em;
+	overflow-y: scroll;
+	white-space: pre-wrap;
+	font-family: Consolas, monospace;
+}
+</style>
+<script>
+/* start student implementation */
+function findString(id, text, period, onFound){
+	let root = document.getElementById(id);
+
+	// helper function to traverse 
+	let traverse = (node) => {
+		if (node.nodeType === 3){
+			return node.nodeValue.includes(text);
+		}
+		else {
+			let found = false;
+			for (let i = 0; i < node.childNodes.length; i ++){
+				found = found || traverse(node.childNodes[i]);
+			}
+			return found;
+		}
+	}
+
+	let next = () => {
+		if (traverse(root)){
+			onFound();
+		}
+		else {
+			setTimeout(next, period);
+		}
+	}
+
+	next();
+}
+/* end student implementation */
+
+window.addEventListener('load', function(){
+	const resetBtn = document.querySelector('#btn-reset');
+	const runBtn = document.querySelector('#btn-run-all');
+
+	const consoleDiv = document.querySelector('#console');
+	console.log = (text) => {
+		let div = document.createElement('div');
+		div.textContent = String(text);
+		consoleDiv.appendChild(div);
+	};
+	const timers = { 'interval': [], 'timeout': [] };
+	const timerSpy = { current: null };
+	const _setTimeout = window.setTimeout;
+	const _setInterval = window.setInterval;
+	window.setTimeout = (callback, delay) => {
+		let timer = _setTimeout(() => {
+			timerSpy.current.count ++;
+			callback();
+		}, delay);
+		timers.timeout.push(timer);
+		return timer;
+	}
+	window.setInterval = (callback, delay) => {
+		let timer = _setInterval(() => {
+			timerSpy.current.count ++;
+			callback();
+		}, delay);
+		timers.interval.push(timer);
+		return timer;
+	}
+	const clearTimers = () => {
+		timers.interval.forEach(timer => clearInterval(timer));
+		timers.timeout.forEach(timer => clearTimeout(timer));
+	}
+
+	const uid = () => Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+	const valueMap = {};
+	const hasChanged = node => {
+		if (!node || node.nodeType !== 3) return false;
+		let value = node.nodeValue.trim();
+		if (!node.uid){
+			node.uid = uid();
+			valueMap[node.uid] = value;
+		}
+		let changed = valueMap[node.uid] !== value;
+		valueMap[node.uid] = value;
+		return changed;
+	};
+	// const setup = node => { hasChanged(node); node.childNodes.forEach(setup); return node; }
+
+	const tests = {
+		'1': {
+			html: `The trivial case`,
+			text: 'trivial',
+			period: 100,
+			delay: 0,
+			change: node => {
+				node.nodeValue = 'Changed text';
+			},
+			expected: 1
+		},
+		'2': {
+			html: `<div>
+				Text inside a div
+
+				<div>
+					<span>Another</span>
+					<span>case</span>
+					<span>with nested text</span>
+				</div>
+			</div>`,
+			text: 'nested',
+			period: 100,
+			delay: 0,
+			change: node => {
+				node.firstChild.nodeValue = 'Changed text';
+			},
+			expected: 1
+		},
+		'3': {
+			html: `<div>
+				Nothing here
+				<div>
+				at first
+				</div>
+			</div>`,
+			text: 'later',
+			period: 100,
+			delay: 50,
+			delayedAppend: node => {
+				node.querySelector('div').appendChild(document.createTextNode('this appears later'));
+			}
+		},
+		'4': {
+			html: `<div>
+				Nothing here
+				<div>
+				at first
+				</div>
+			</div>`,
+			text: 'after',
+			period: 100,
+			delay: 250,
+			delayedAppend: node => {
+				node.querySelector('div').appendChild(document.createTextNode('this appears after 250ms'));
+			}
+		},
+		'5': {
+			html: `<div>
+				This div has a
+				<hr/>
+				<div>
+					<h2>Mix</h2>
+					of
+					<b>different</b>
+					<i>elements</i>
+					<p>
+						nested
+						<span>inside</span>
+					</p>
+				</div>
+			</div>`,
+			text: 'appears',
+			period: 100,
+			delay: 150,
+			delayedAppend: node => {
+				node.querySelector('p').appendChild(document.createTextNode('this appears after 150ms'));
+			}
+		},
+		'6': {
+			html: `<div>
+				In this test
+				<div>
+				the text
+					<div>
+						will never be
+						<div>
+							found
+						</div>
+					</div>
+				</div>
+			</div>`,
+			text: 'time',
+			period: 100,
+			delay: 500,
+			delayedAppend: node => {
+				node.querySelector('div').appendChild(document.createTextNode('even after this appears'));
+			},
+			shouldTimeout: true
+		}
+	}
+
+	const reset = () => {
+		let testarea = document.querySelector('#testarea');
+		testarea.innerHTML = Object.keys(tests).map(key => `<div class="test-box">
+			<div class="test-control">
+				<h4>Test ${key}</h4>
+				<span class="test-label">findString("test-${key}", "${tests[key].text}", ${tests[key].period}, onFound)</span>
+				<button id="btn-run-${key}">Run Test ${key}</button>
+				<button id="btn-reset-${key}">Reset</button>
+				<span id="result-${key}"></span>
+			</div>
+			<div id="test-${key}" class="test-container">${tests[key].html}</div>
+		</div>`).join('\n');
+
+		const runTest = i => new Promise((resolve, reject) => {
+			try {
+				document.querySelector(`#btn-run-${i}`).disabled = true;
+				document.querySelector(`#btn-reset-${i}`).disabled = true;
+				let addedAt, foundAt, callbackCalls = 0;
+
+				timerSpy.current = { count: 0 };
+				findString('test-' + i, tests[i].text, tests[i].period, () => {
+					if (callbackCalls > 0){
+						testarea.querySelector('#result-' + i).textContent = `onFound called ${1 + callbackCalls} times`;
+					}
+					callbackCalls ++;
+					foundAt = Date.now();
+
+					let result;
+
+					if (timerSpy.current.count === Math.ceil(tests[i].delay / tests[i].period)){
+						result = 'PASS';
+					}
+					else {
+						result = 'Timer issue';
+					}
+					resolve(result);
+				});
+
+				if (tests[i].delayedAppend){
+					_setTimeout(() => {
+						tests[i].delayedAppend(document.getElementById('test-' + i));
+						addedAt = Date.now();
+					}, tests[i].delay);	
+				}
+
+				_setTimeout(() => {
+					resolve(tests[i].shouldTimeout ? 'PASS' : 'Timed Out');
+				}, 1000);
+			}
+			catch (err){
+				console.log(`Test ${i} Error:`);
+				console.log(err.stack);
+				resolve(`Runtime Error`);
+			}
+		}).then(result => {
+			testarea.querySelector('#result-' + i).textContent = result;
+			document.querySelector(`#btn-run-${i}`).disabled = false;
+				document.querySelector(`#btn-reset-${i}`).disabled = false;
+		});
+
+		const runAll = async () => {
+			for (let i = 1; i <= 6; i ++){
+				console.log('Running test ' + i);
+				await runTest(i);
+			}
+
+			document.querySelector('#top-menu>span').textContent = 'Tests finished';
+		}
+
+		for (let i = 1; i <= 6; i ++){
+			let area = testarea.querySelector('#test-' + i);
+			testarea.querySelector('#btn-run-' + i).addEventListener('click', evt => runTest(i));
+			testarea.querySelector('#btn-reset-' + i).addEventListener('click', evt => {
+				area.innerHTML = tests[i].html;
+				testarea.querySelector('#result-' + i).textContent = '';
+				consoleDiv.innerHTML = '';
+				clearTimers();
+			});
+		}
+
+		runBtn.removeEventListener('click', runBtn.clickListener);
+		runBtn.addEventListener('click', runAll);
+		runBtn.clickListener = runAll;
+
+		document.querySelector('#top-menu>span').textContent = '';
+
+		consoleDiv.innerHTML = '';
+		clearTimers();
+	};
+
+	resetBtn.addEventListener('click', reset);
+
+	reset();
+
+});
+
+</script>
+	</head>
+	<body>
+		<div id="top-menu">
+			<button id="btn-run-all">Run Tests</button>
+			<button id="btn-reset">Reset</button>
+			<span></span>
+			<div id="console"></div>
+		</div>
+		<div id="testarea"></div>
+	</body>
+</html>
